@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carbon Footprint Calculator</title>
+  <style>
+    :root { --green:#16834b; --dark:#123b2b; --mint:#eaf7ef; --ink:#20352b; --muted:#66776d; }
+    * { box-sizing:border-box; }
+    body {
+      margin:0; font-family:Arial, Helvetica, sans-serif; color:var(--ink);
+      background:linear-gradient(135deg,#f3fbf5,#e6f5eb); min-height:100vh;
+    }
+    header { background:var(--dark); color:white; padding:24px 18px; text-align:center; }
+    header h1 { margin:0 0 8px; font-size:clamp(25px,4vw,36px); }
+    header p { margin:0; color:#d6eee0; }
+    .container { width:min(940px,92%); margin:28px auto 48px; }
+    .intro { text-align:center; margin-bottom:22px; }
+    .intro h2 { color:var(--dark); margin-bottom:8px; }
+    .intro p { color:var(--muted); line-height:1.5; }
+    .layout { display:grid; grid-template-columns:1.1fr .9fr; gap:20px; align-items:start; }
+    .card { background:white; border-radius:18px; padding:24px; box-shadow:0 8px 28px #174b2a12; }
+    .card h3 { margin:0 0 18px; color:var(--dark); }
+    .field { margin-bottom:16px; }
+    label { display:block; font-weight:700; margin-bottom:7px; font-size:14px; }
+    input, select {
+      width:100%; padding:12px 13px; border:1px solid #cbd9cf; border-radius:10px;
+      font-size:15px; background:#fbfefc; color:var(--ink);
+    }
+    input:focus, select:focus { outline:2px solid #9bd5b1; border-color:var(--green); }
+    button {
+      width:100%; border:0; border-radius:11px; padding:14px; background:var(--green);
+      color:white; font-size:16px; font-weight:700; cursor:pointer; margin-top:4px;
+    }
+    button:hover { background:#106b3c; }
+    .result-panel { background:var(--mint); border:1px solid #d1ead9; text-align:center; }
+    .result-panel .symbol { font-size:34px; }
+    .result-number { font-size:42px; font-weight:800; color:var(--green); margin:10px 0 2px; }
+    .unit { color:var(--muted); font-size:14px; }
+    .status { margin:18px 0 8px; font-weight:700; color:var(--dark); }
+    .tips { text-align:left; background:white; padding:15px; border-radius:12px; margin-top:18px; }
+    .tips h4 { margin:0 0 9px; color:var(--dark); }
+    .tips ul { padding-left:20px; margin:0; line-height:1.7; font-size:14px; }
+    .hidden { display:none; }
+    .note { margin-top:18px; font-size:12px; color:var(--muted); line-height:1.5; }
+    footer { text-align:center; color:var(--muted); font-size:13px; padding:0 15px 25px; }
+    @media(max-width:700px) { .layout { grid-template-columns:1fr; } .card { padding:20px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🌱 Carbon Footprint Calculator</h1>
+    <p>Understand your daily impact. Take a step towards a greener planet.</p>
+  </header>
+
+  <main class="container">
+    <section class="intro">
+      <h2>Calculate Your Daily Carbon Footprint</h2>
+      <p>Enter your daily travel, electricity use and food habits to estimate your carbon emissions.</p>
+    </section>
+
+    <div class="layout">
+      <section class="card">
+        <h3>Enter Your Daily Activities</h3>
+        <form id="carbonForm">
+          <div class="field">
+            <label for="distance">Travel by car / bike (kilometres per day)</label>
+            <input id="distance" type="number" min="0" max="1000" step="0.1" value="10" required>
+          </div>
+          <div class="field">
+            <label for="transport">Main vehicle type</label>
+            <select id="transport">
+              <option value="0.12">Motorcycle / Scooter</option>
+              <option value="0.21">Petrol car</option>
+              <option value="0.17">Diesel car</option>
+              <option value="0.05">Public bus (estimated per passenger-km)</option>
+              <option value="0">Walking / Cycling</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="electricity">Electricity use (kWh per day)</label>
+            <input id="electricity" type="number" min="0" max="500" step="0.1" value="3" required>
+          </div>
+          <div class="field">
+            <label for="diet">Food habit</label>
+            <select id="diet">
+              <option value="2.5">Mostly vegetarian</option>
+              <option value="4">Mixed diet</option>
+              <option value="6">Meat-heavy diet</option>
+            </select>
+          </div>
+          <button type="submit">Calculate My Footprint</button>
+        </form>
+        <p class="note">Note: This is a student demonstration using simplified illustrative emission factors. Actual emissions vary by vehicle, electricity source and lifestyle.</p>
+      </section>
+
+      <section class="card result-panel" aria-live="polite">
+        <div class="symbol">🌍</div>
+        <h3>Your Result</h3>
+        <div id="result" class="result-number">—</div>
+        <div class="unit">kg CO₂ equivalent per day</div>
+        <p id="status" class="status">Fill in your activities and calculate.</p>
+        <div id="tips" class="tips hidden">
+          <h4>🌿 Tips to reduce your footprint</h4>
+          <ul id="tipList"></ul>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer>Student Innovation Project • Carbon Footprint Calculator</footer>
+
+  <script>
+    const form = document.getElementById('carbonForm');
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+
+      const distance = Number(document.getElementById('distance').value);
+      const transportFactor = Number(document.getElementById('transport').value);
+      const electricity = Number(document.getElementById('electricity').value);
+      const diet = Number(document.getElementById('diet').value);
+
+      if ([distance, electricity].some(value => !Number.isFinite(value) || value < 0)) {
+        alert('Please enter valid non-negative numbers.');
+        return;
+      }
+
+      // Simplified illustrative factors for this classroom project.
+      const travelEmissions = distance * transportFactor;
+      const electricityEmissions = electricity * 0.7;
+      const total = travelEmissions + electricityEmissions + diet;
+
+      document.getElementById('result').textContent = total.toFixed(2);
+      const status = document.getElementById('status');
+      if (total < 5) status.textContent = 'Great! Your estimated daily footprint is relatively low.';
+      else if (total < 9) status.textContent = 'Moderate footprint. Small changes can make a difference.';
+      else status.textContent = 'Your estimated footprint is high. Try the tips below.';
+
+      const tips = [];
+      if (transportFactor > 0 && distance > 0) tips.push('Walk, cycle or use public transport for shorter journeys.');
+      tips.push('Switch off lights, fans and appliances when they are not in use.');
+      if (diet >= 4) tips.push('Try adding more local, seasonal and plant-based meals.');
+      tips.push('Use energy-efficient appliances and avoid wasting electricity.');
+
+      const tipList = document.getElementById('tipList');
+      tipList.innerHTML = '';
+      tips.forEach(tip => {
+        const li = document.createElement('li');
+        li.textContent = tip;
+        tipList.appendChild(li);
+      });
+      document.getElementById('tips').classList.remove('hidden');
+    });
+  </script>
+</body>
+</html>
